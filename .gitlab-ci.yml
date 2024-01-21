@@ -1,0 +1,17 @@
+stages:
+  - build
+  - sast
+  - test
+  - rollout
+
+include:
+ - project: "koibanx/ops/automation/templates-gitlab"
+   ref: main
+   file:
+      - "Jobs/checkIn/BuildCheckIn.gitlab-ci.yml"   
+      - "Jobs/checkIn/RolloutCheckIn.gitlab-ci.yml"
+      - "Workflows/Docker.gitlab-ci.yml"
+      - "Workflows/Rules-Environments.gitlab-ci.yml"
+      - "Security/Container-Scanning.gitlab-ci.yml"
+      - "Security/Secret-Detection.gitlab-ci.yml"
+      - "Security/SAST.gitlab-ci.yml"

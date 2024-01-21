@@ -1,0 +1,11 @@
+node_modules
+.vscode
+package.json
+package-lock.json
+dist
+.env
+.idea
+.gitlab-ci.yml
+.prettierrc.json
+.eslintrc.json
+CHANGELOG.md

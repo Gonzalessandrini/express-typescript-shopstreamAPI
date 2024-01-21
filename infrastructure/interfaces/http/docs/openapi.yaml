@@ -1,0 +1,162 @@
+openapi: 3.0.0
+info:
+  title: KoiPlate API documentation
+  version: 0.1.0
+  description: >-
+    <div>
+      <img src="https://i.ibb.co/y4VJQ7L/Mask-group-2.png" alt="koiPlate" border="0">
+    </div>
+    <img src="https://img.shields.io/badge/version-v0.23.0-orange" alt="koiPlate" border="0">
+
+servers:
+  - url: https://api.koiplate.develop.tokkenit.com/
+    description: development
+  - url: http://127.0.0.1:3000
+    description: local development
+
+
+paths:
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  requestBodies:
+    DefaultMultipartRequestBody:
+      description: Default multipart request body
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/DefaultMultipartSchema"
+
+  schemas:
+
+  responses:
+    OkResponse:
+      description: Ok
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: ok
+
+    ConflictError:
+      description: Conflict error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "{UC}-UNF001"
+              message:
+                type: string
+                example: "Conflict error"
+
+    UnauthorizedUserError:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: AUTH01
+              message:
+                type: string
+                example: UnauthorizedUser error
+
+
+    WrongBodyRequestError:
+      description: Invalid body request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: WBR001
+              message:
+                type: string
+                example: Wrong body request parameters
+
+    InvalidParamsError:
+      description: Invalid params
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: IP001
+              message:
+                type: string
+                example: Wrong parameters
+
+    InvalidParameterError:
+      description: Invalid parameter
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "<UseCase>-[IP001]"
+              message:
+                type: string
+                example: InvalidParameterError
+
+    NotFoundError:
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "{UC}-UNF001"
+              message:
+                type: string
+                example: "NotFound error"
+
+    UnhandledErrorResponse:
+      description: Non expected error
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "{VUTR01}"
+              message:
+                type: string
+                example: "Validation error"
+
+    ConsistencyError:
+      description: Consistency error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "{VUTR03}"
+              message:
+                type: string
+                example: "Consistency error"

@@ -1,0 +1,564 @@
+openapi: 3.0.0
+info:
+  title: API Documentation
+  description: >-
+    <div>
+      <img src="https://i.ibb.co/hLnH05x/Addresser.png" alt="Addresser" border="0" width="700px">
+      <p>Core module to deposit any assetId over <b>Algorand</b>. It gives temporal addresses to users and searchs in the last rounds of the blockchain any transfer of the requested asset to this address. Once a transfer is found, then the callback linked to this address is hitted with the received amount and the address is free for new users who wants to deposit assets.</p>
+    
+      <h1>Security</h1>
+      <p>Every endpoint documented below must be acceded with <code>apikey</code> header in the request.</p>
+    
+      <h1>Koibanx Documentation</h1>
+      <p>You can find how it works and more detail of these endpoints in the <a href="https://wiki.koibanx.com/es/devs/core/Addresser">Koibanx Wiki</a>.</p>
+    </div>
+  version: 1.2.0
+
+servers:
+  - url: http://127.0.0.1:3000
+    description: local development
+  - url: https://api.addresser.develop.tokkenit.com
+    description: development environment
+
+paths:
+  /address:
+    get:
+      tags:
+        - Deposit
+      summary: "Require an address for specific asset-id deposit"
+      security:
+        - accessToken: []
+      parameters:
+        - in: query
+          required: true
+          schema:
+            type: number
+          name: assetId
+          example: 10458941
+          description: "ASA id over Algorand. Should be a valid asset-id. **Important**: *The type of this parameter is `Number`, not `String`*"
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: callback
+          example: "https%3A%2F%2Fapi.gateway.develop.tokkenit.com%2Fcallback%2Fwithdraw%3Fuser%3D62b36556c8c4cb9c0415f233%26transaction%3D62b36556c8c4cb9c0415f233"
+          description: "Callback to notify when deposit is detected on returned address. This callback will have an `amount` param in the query. This callback should be encoded in the parameters section of the request."
+      responses:
+        200:
+          $ref: '#/components/responses/GetFreshAddress'
+        401:
+          $ref: '#/components/responses/UnauthorizedErrorGFA'
+        404:
+          $ref: '#/components/responses/GetFreshAddressError'
+        406:
+          $ref: '#/components/responses/CallbackRequiredErrorGFA'
+        500:
+          $ref: '#/components/responses/UnhandledErrorResponse'
+    put:
+      tags:
+        - Deposit
+      summary: "Free an address which was previously requested for deposit"
+      security:
+        - accessToken: []
+      parameters:
+        - in: query
+          required: true
+          schema:
+            type: number
+          name: assetId
+          example: 10458941
+          description: "ASA id over Algorand. Should be a valid asset-id. **Important**: *The type of this parameter is `Number`, not `String`*"
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: address
+          example: "XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA"
+          description: "Address to set as available"
+      responses:
+        200:
+          $ref: '#/components/responses/FreeAddress'
+        401:
+          $ref: '#/components/responses/UnauthorizedErrorFA'
+        404:
+          $ref: '#/components/responses/AddressNotFoundError'
+        500:
+          $ref: '#/components/responses/UnhandledErrorResponse'
+
+  /withdraw:
+    post:
+      tags:
+        - Withdraw
+      summary: "Withdraw an amount of assets from master address"
+      security:
+        - accessToken: []
+      parameters:
+        - in: query
+          required: true
+          schema:
+            type: number
+          name: assetId
+          example: 10458941
+          description: "ASA id over Algorand. Should be a valid asset-id. **Important**: *The type of this parameter is `Number`, not `String`*"
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: callback
+          example: "https%3A%2F%2Fapi.gateway.develop.tokkenit.com%2Fcallback%2Fwithdraw%3Fuser%3D62b36556c8c4cb9c0415f233%26transaction%3D62b36556c8c4cb9c0415f233"
+          description: "Callback to notify when withdraw is completed to the requested address. This callback should be encoded in the parameters section of the request."
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: address
+          example: "XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA"
+          description: "Address to withdraw the amount of assets requested."
+        - in: query
+          required: true
+          schema:
+            type: number
+          name: amount
+          example: 1000000
+          description: "Amount to transfer to the requested address."
+      responses:
+        200:
+          $ref: '#/components/responses/WithdrawAsset'
+        401:
+          $ref: '#/components/responses/UnauthorizedErrorWA'
+        406:
+          $ref: '#/components/responses/CallbackRequiredErrorWA'
+        409:
+          $ref: '#/components/responses/NotEnoughBalanceInMasterError'
+        500:
+          $ref: '#/components/responses/UnhandledErrorResponse'
+
+  /consolidate:
+    post:
+      tags:
+        - Consolidate
+      summary: "Consolidate assets into master address"
+      security:
+        - accessToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/Consolidate'
+        401:
+          $ref: '#/components/responses/UnauthorizedErrorC'
+        409:
+          $ref: '#/components/responses/ConsolidateError'
+        500:
+          $ref: '#/components/responses/UnhandledErrorResponse'
+
+  /status:
+    get:
+      tags:
+        - Status
+      summary: "Get Addresser status"
+      security:
+        - accessToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/Status'
+        401:
+          $ref: '#/components/responses/UnauthorizedErrorC'
+        409:
+          $ref: '#/components/responses/GetAddresserStatusError'
+        500:
+          $ref: '#/components/responses/UnhandledErrorResponse'
+
+components:
+  securitySchemes:
+    accessToken:
+      type: apiKey
+      in: header
+      name: apikey
+
+  responses:
+    GetFreshAddress:
+      description: There are multiple possible responses. See each one in the Example select input.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetReadyAddress"
+          examples:
+            WaitingDeposit:
+              value:
+                id: 62b36556c8c4cb9c0415f233
+                address: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+                callback: https%3A%2F%2Fapi.gateway.develop.tokkenit.com%2Fcallback%2Fwithdraw%3Fuser%3D62b36556c8c4cb9c0415f233%26transaction%3D62b36556c8c4cb9c0415f233
+                assetId: 10458941
+                optin: true
+                isAvailable: false
+                status: waitingDeposit
+            OptinRequired:
+              value:
+                id: 62b36556c8c4cb9c0415f233
+                address: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+                callback: https%3A%2F%2Fapi.gateway.develop.tokkenit.com%2Fcallback%2Fwithdraw%3Fuser%3D62b36556c8c4cb9c0415f233%26transaction%3D62b36556c8c4cb9c0415f233
+                assetId: 10458941
+                optin: false
+                isAvailable: false
+                status: optinRequired
+            CreatingAddress:
+              value:
+                id: 62b36556c8c4cb9c0415f233
+                address: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+                callback: https%3A%2F%2Fapi.gateway.develop.tokkenit.com%2Fcallback%2Fwithdraw%3Fuser%3D62b36556c8c4cb9c0415f233%26transaction%3D62b36556c8c4cb9c0415f233
+                assetId: 10458941
+                optin: false
+                isAvailable: false
+                status: creatingAddress
+
+    FreeAddress:
+      description: Free address.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetReadyAddress"
+          examples:
+            FreeAddress:
+              value:
+                id: 62bc96e86a06e2d17961c635
+                address: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+                callback: null
+                assetId: 10458941
+                optin: true
+                isAvailable: true
+
+    WithdrawAsset:
+      description: Withdraw an amount of asset to the requested asset
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Transaction"
+
+    Consolidate:
+      description: Consolidate balances in master address
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Consolidate"
+
+    Status:
+      description: Addresser status
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Status"
+
+    CallbackRequiredErrorGFA:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "GetFreshAddress-CallbackRequired"
+              message:
+                type: string
+                example: "CallbackRequiredError"
+              details:
+                type: string
+                example: "Callback is required. And should be encoded in base64"
+
+    CallbackRequiredErrorWA:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "WithdrawAsset-CallbackRequired"
+              message:
+                type: string
+                example: "CallbackRequiredError"
+              details:
+                type: string
+                example: "Callback is required. And should be encoded in base64"
+
+    GetFreshAddressError:
+      description: Couldn't get any address for this asset
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "GetFreshAddress"
+              message:
+                type: string
+                example: "GetFreshAddressError"
+              details:
+                type: string
+                example: "Couldn't get any address"
+
+    AddressNotFoundError:
+      description: Address not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "AddressNotFound"
+              message:
+                type: string
+                example: "AddressNotFoundError"
+              details:
+                type: string
+                example: "Couldn't get the address"
+
+    ConsolidateError:
+      description: Couldn't consolidate balances in master address
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "Consolidate"
+              message:
+                type: string
+                example: "ConsolidateError"
+              details:
+                type: string
+                example: "Couldn't consolidate balances in master address"
+
+    GetAddresserStatusError:
+      description: Couldn't get addresser status
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "GetAddresserStatus"
+              message:
+                type: string
+                example: "GetAddresserStatusError"
+              details:
+                type: string
+                example: "Couldn't get addresser status"
+
+    NotEnoughBalanceInMasterError:
+      description: Not enough balance
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "WithdrawAsset-NotEnoughBalanceInMaster"
+              message:
+                type: string
+                example: "NotEnoughBalanceInMasterError"
+              details:
+                type: string
+                example: "Not enough balance of this asset on master address"
+
+    UnauthorizedErrorGFA:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "GetFreshAddress-AKV001-"
+              message:
+                type: string
+                example: "Unauthorized. Details: Invalid APIKEY"
+
+    UnauthorizedErrorWA:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "WithdrawAsset-AKV001-"
+              message:
+                type: string
+                example: "Unauthorized. Details: Invalid APIKEY"
+
+    UnauthorizedErrorFA:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "FreeAddress-AKV001-"
+              message:
+                type: string
+                example: "Unauthorized. Details: Invalid APIKEY"
+
+    UnauthorizedErrorC:
+      description: Invalid APIKEY
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "Consolidate-AKV001-"
+              message:
+                type: string
+                example: "Unauthorized. Details: Invalid APIKEY"
+
+    UnhandledErrorResponse:
+      description: Non expected error
+
+  schemas:
+    AssetReadyAddress:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 62b36556c8c4cb9c0415f233
+        address:
+          type: string
+          example: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+        callback:
+          type: string
+          example: https://1282-2802-8010-900c-bc00-db2-e44e-e549-24e0.ngrok.io/callback/test
+        assetId:
+          type: number
+          example: 10458941
+        optin:
+          type: boolean
+        isAvailable:
+          type: boolean
+        status:
+          type: string
+          example: waitingDeposit
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 62ba08fb2419c6e411affda1
+        txId:
+          type: string
+          example: G3KJRFLGYNUZ44BJX54RIN5SRZSZ4CZ53OYSYLWPKBWJ4KW7HA6Q
+        status:
+          type: string
+          example: pending
+        type:
+          type: string
+          example: withdraw
+        details:
+          type: object
+          properties:
+            from:
+              type: string
+              example: TG4PN3JGWAPK7X63AV75IDHNZ2MU265FXAKZ3RYKLDERXNY2OLAICQQMWA
+            to:
+              type: string
+              example: XEG2HXRIOM5JUOB22PXM672X67HJDL5OTCOR7FO7OPS6VKLYO6UJ7QSPCA
+            amount:
+              type: number
+              example: 1000000
+            assetId:
+              type: number
+              example: 10458941
+            callback:
+              type: string
+              example: https://1282-2802-8010-900c-bc00-db2-e44e-e549-24e0.ngrok.io/callback/test
+
+    Status:
+      type: object
+      properties:
+        masterInfo:
+          type: object
+          properties:
+            address:
+              type: string
+              example: TG4PN3JGWAPK7X63AV75IDHNZ2MU265FXAKZ3RYKLDERXNY2OLAICQQMWA
+            amount:
+              type: number
+              example: 78294000
+            amount-without-pending-rewards:
+              type: number
+              example: 78294000
+            apps-local-state:
+              type: object
+            apps-total-schema:
+              type: object
+              properties:
+                num-byte-slice:
+                  type: number
+                  example: 0
+                num-uint:
+                  type: number
+                  example: 0
+            assets:
+              type: array
+              items:
+                type: object
+                properties:
+                  amount:
+                    type: number
+                    example: 733100000
+                  asset-id:
+                    type: number
+                    example: 10458941
+                  is-frozen:
+                    type: boolean
+            created-apps:
+              type: object
+            created-assets:
+              type: object
+            min-balance:
+              type: number
+              example: 300000
+            pending-rewards:
+              type: number
+              example: 0
+            reward-base:
+              type: number
+              example: 27521
+            rewards:
+              type: number
+              example: 0
+            round:
+              type: number
+              example: 22667465
+            status:
+              type: string
+              example: Offline
+            total-apps-opted-in:
+              type: number
+              example: 0
+            total-assets-opted-in:
+              type: number
+              example: 2
+            total-created-apps:
+              type: number
+              example: 0
+            total-created-assets:
+              type: number
+              example: 0
+            apps:
+              type: object
+
+    Consolidate:
+      type: object
+
